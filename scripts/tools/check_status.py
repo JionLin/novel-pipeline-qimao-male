@@ -1,15 +1,14 @@
-import os, sys
-SCRIPTS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if SCRIPTS_ROOT not in sys.path:
-    sys.path.insert(0, SCRIPTS_ROOT)
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 小说写作流水线进度看板
 """
 import os, glob, re, sys, yaml
-SCRIPTS = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, SCRIPTS)
+
+SCRIPTS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPTS = SCRIPTS_ROOT
+if SCRIPTS_ROOT not in sys.path:
+    sys.path.insert(0, SCRIPTS_ROOT)
 from pipeline.utils import count_chinese_chars, load_active_config
 
 cfg = load_active_config(script_dir=SCRIPTS_ROOT)

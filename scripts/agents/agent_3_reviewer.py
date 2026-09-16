@@ -156,62 +156,73 @@ def run_reviewer(
     if tech_hits:
         fast_fail_reasons.append(f"科技树分卷代差违规：第{chapter_num}章正文命中超代禁用词【{', '.join(tech_hits)}】！当前卷严禁跳代出现高阶化工产物，请替换为符合当前生产力水平的替代物（如提纯黑火药、拉火管、苦味酸粗品）！")
 
-    # 1.9 七猫第 1 章开篇弹性公差反击与两屏 500 字 0ms 探针 (M7 规范)
+    genre_val = (cfg.get("project", {}).get("genre") or cfg.get("novel", {}).get("genre") or cfg.get("genre", "")) if cfg else ""
+    channel_val = (cfg.get("project", {}).get("channel") or cfg.get("novel", {}).get("channel") or "") if cfg else ""
+    is_female = (channel_val == "female" or "female" in genre_val or "言情" in genre_val or "种田" in genre_val or "甜宠" in genre_val)
+
+    # 1.9 开篇结构 0ms 探针 (男频七猫 M7 规范 / 女频黄金开篇规范)
     if chapter_num == 1:
-        op_cfg = cfg.get("opening_pacing", {})
-        fc_cfg = op_cfg.get("first_counter", {})
-        max_counter_chars = fc_cfg.get("max_chars", 240)
-        threat_max_chars = op_cfg.get("threat_appear_max_chars", 100)
-        conf_window = op_cfg.get("confrontation_window_chars", 500)
-
-        # 剥离 Markdown 标题与首尾换行，获取纯叙事正文
         clean_body = re.sub(r'^#\s+.*?\n+', '', content.strip())
+        if is_female:
+            # 女频黄金开篇：前 300 字必须建立极端生存困境/身体感知与自救意志
+            first_300 = clean_body[:300]
+            female_threats = ["寒", "冻", "风", "雪", "冷", "热", "病", "痛", "饥", "饿", "罪", "奴", "流放", "配", "死", "荒", "粮"]
+            has_female_threat = any(k in first_300 for k in female_threats)
+            if not has_female_threat:
+                fast_fail_reasons.append("【女频黄金开篇违规】第 1 章前 300 字内必须建立极端生存困境或身体感知（寒冻/高热/流放/断粮/配婚）！")
+        else:
+            op_cfg = cfg.get("opening_pacing", {})
+            fc_cfg = op_cfg.get("first_counter", {})
+            max_counter_chars = fc_cfg.get("max_chars", 240)
+            threat_max_chars = op_cfg.get("threat_appear_max_chars", 100)
+            conf_window = op_cfg.get("confrontation_window_chars", 500)
 
-        first_threat = clean_body[:threat_max_chars]
-        first_counter = clean_body[:max_counter_chars]
-        first_conf = clean_body[:conf_window]
+            first_threat = clean_body[:threat_max_chars]
+            first_counter = clean_body[:max_counter_chars]
+            first_conf = clean_body[:conf_window]
 
-        # 1. 前 threat_max_chars 字必须包含物理动作与压迫者/即时威胁
-        threat_indicators = [
-            "“", "”", "！", "？", "：", "跪", "受贬", "诏书", "圣旨", "死", "刀", "旨", "扣", "砸",
-            "算账", "银两", "杀", "敌", "逼", "战", "大殿", "短剑", "鸩酒", "削爵", "断粮", "断饷",
-            "暗器", "骨尺", "玉佩", "抽刀", "出鞘", "刺", "锁", "门槛", "冰冷", "嘲弄", "甩", "踏"
-        ]
-        custom_threats = op_cfg.get("threat_keywords", [])
-        if custom_threats:
-            threat_indicators.extend(custom_threats)
-        has_threat_100 = any(ind in first_threat for ind in threat_indicators)
-        if not has_threat_100:
-            fast_fail_reasons.append(f"【七猫黄金开篇违规】第 1 章前 {threat_max_chars} 字内必须显形压迫者与即时生存剥夺威胁（利刃/毒酒/削爵/断粮/锁砸台阶）！")
+            # 1. 前 threat_max_chars 字必须包含物理动作与压迫者/即时威胁
+            threat_indicators = [
+                "“", "”", "！", "？", "：", "跪", "受贬", "诏书", "圣旨", "死", "刀", "旨", "扣", "砸",
+                "算账", "银两", "杀", "敌", "逼", "战", "大殿", "短剑", "鸩酒", "削爵", "断粮", "断饷",
+                "暗器", "骨尺", "玉佩", "抽刀", "出鞘", "刺", "锁", "门槛", "冰冷", "嘲弄", "甩", "踏"
+            ]
+            custom_threats = op_cfg.get("threat_keywords", [])
+            if custom_threats:
+                threat_indicators.extend(custom_threats)
+            has_threat_100 = any(ind in first_threat for ind in threat_indicators)
+            if not has_threat_100:
+                fast_fail_reasons.append(f"【七猫黄金开篇违规】第 1 章前 {threat_max_chars} 字内必须显形压迫者与即时生存剥夺威胁（利刃/毒酒/削爵/断粮/锁砸台阶）！")
 
-        # 2. 前 max_counter_chars 字内主角必须做出至少 1 次反击动作或冷硬语言回应（严禁沉默受辱）
-        counter_indicators = [
-            "冷笑", "直视", "反问", "扣住", "反手", "改了宗法", "算不清", "烂账", "按住", "拔出",
-            "顿在", "点在", "震慑", "算账", "冷硬", "声音冷", "抬眸", "冷声", "没有跪", "未跪",
-            "不跪", "不退", "未退", "稳稳接住", "接住", "探出", "顿入", "斩", "断喝", "按律",
-            "当场", "踏步", "截断", "挑入", "眼皮微抬", "抬手"
-        ]
-        custom_counters = fc_cfg.get("counter_keywords", [])
-        if custom_counters:
-            counter_indicators.extend(custom_counters)
+            # 2. 前 max_counter_chars 字内主角必须做出至少 1 次反击动作或冷硬语言回应（严禁沉默受辱）
+            counter_indicators = [
+                "冷笑", "直视", "反问", "扣住", "反手", "改了宗法", "算不清", "烂账", "按住", "拔出",
+                "顿在", "点在", "震慑", "算账", "冷硬", "声音冷", "抬眸", "冷声", "没有跪", "未跪",
+                "不跪", "不退", "未退", "稳稳接住", "接住", "探出", "顿入", "斩", "断喝", "按律",
+                "当场", "踏步", "截断", "挑入", "眼皮微抬", "抬手"
+            ]
+            custom_counters = fc_cfg.get("counter_keywords", [])
+            if custom_counters:
+                counter_indicators.extend(custom_counters)
 
-        has_counter_win = (
-            any(ind in first_counter for ind in counter_indicators) or
-            bool(re.search(r'(?:不跪|未跪|没有跪|不退|接住|探出|顿|点|按|横|架|截|拔|抽|斩|断喝)', first_counter)) or
-            ("“" in first_counter and any(k in first_counter for k in ["改了", "本王", "律", "算", "清", "命", "账", "短了", "量", "斩", "凭何", "休想"]))
-        )
-        if not has_counter_win:
-            fast_fail_reasons.append(f"【七猫黄金开篇违规】第 1 章在弹性公差上限前（前 {max_counter_chars} 字内）主角必须做出至少 1 次反击性动作或冷硬语言回应，严禁被动挨打/沉默受辱超过 {max_counter_chars} 字！")
+            has_counter_win = (
+                any(ind in first_counter for ind in counter_indicators) or
+                bool(re.search(r'(?:不跪|未跪|没有跪|不退|接住|探出|顿|点|按|横|架|截|拔|抽|斩|断喝)', first_counter)) or
+                ("“" in first_counter and any(k in first_counter for k in ["改了", "本王", "律", "算", "清", "命", "账", "短了", "量", "斩", "凭何", "休想"]))
+            )
+            if not has_counter_win:
+                fast_fail_reasons.append(f"【七猫黄金开篇违规】第 1 章在弹性公差上限前（前 {max_counter_chars} 字内）主角必须做出至少 1 次反击性动作或冷硬语言回应，严禁被动挨打/沉默受辱超过 {max_counter_chars} 字！")
 
-        # 3. 前 conf_window 字两屏整体冲突覆盖与非对抗描写三分类拦截
-        has_conflict_500 = any(ind in first_conf for ind in threat_indicators)
-        if not has_conflict_500:
-            fast_fail_reasons.append(f"【七猫开篇二元对抗违规】第 1 章前 {conf_window} 字（移动端前两屏）缺少核心冲突与对抗二元信息，严禁以纯景物清单、纯心理感受或大段前史交代开篇！")
+            # 3. 前 conf_window 字两屏整体冲突覆盖与非对抗描写三分类拦截
+            has_conflict_500 = any(ind in first_conf for ind in threat_indicators)
+            if not has_conflict_500:
+                fast_fail_reasons.append(f"【七猫开篇二元对抗违规】第 1 章前 {conf_window} 字（移动端前两屏）缺少核心冲突与对抗二元信息，严禁以纯景物清单、纯心理感受或大段前史交代开篇！")
 
-    # 1.10 C 类工业造物 3 步失效链 0ms 快速熔断 (防止无尘工业一试即成)
-    ind_chain_hits = check_industrial_failure_chain(content, chapter_outline)
-    if ind_chain_hits:
-        fast_fail_reasons.extend(ind_chain_hits)
+    # 1.10 C 类工业造物 3 步失效链 0ms 快速熔断 (防止无尘工业一试即成，女频豁免)
+    if not is_female:
+        ind_chain_hits = check_industrial_failure_chain(content, chapter_outline)
+        if ind_chain_hits:
+            fast_fail_reasons.extend(ind_chain_hits)
 
     # 1.11 三线节奏疲劳监控 (辅助审计)
     try:

@@ -434,23 +434,44 @@ def _resolve_scripts_root(script_dir: str = None) -> str:
     return cur
 
 
+def is_valid_novel_project_dir(path: str) -> bool:
+    """严格校验是否为合法的小说项目目录（拦截 ~、根目录、以及无 config.yaml 的目录）"""
+    if not path or not isinstance(path, str):
+        return False
+    abs_path = os.path.abspath(os.path.expanduser(path))
+    if not os.path.isdir(abs_path):
+        return False
+    home_dir = os.path.abspath(os.path.expanduser("~"))
+    if abs_path == home_dir or abs_path == os.path.dirname(home_dir) or abs_path in ("/", "\\"):
+        return False
+    cfg_file = os.path.join(abs_path, "config.yaml")
+    return os.path.isfile(cfg_file)
+
+
 def get_active_project_dir(script_dir: str = None) -> str:
-    """获取当前活动小说项目目录（从 .active_project 指针获取）"""
+    """获取当前活动小说项目目录（从 .active_project 指针获取，若指针无效或越界则安全回退到当前小说代码库根目录）"""
     root_dir = _resolve_scripts_root(script_dir)
     ptr_file = os.path.join(root_dir, ".active_project")
     if os.path.exists(ptr_file):
         try:
             with open(ptr_file, "r", encoding="utf-8") as f:
                 p = f.read().strip()
-                if p and os.path.exists(p):
+                if p and is_valid_novel_project_dir(p):
                     return os.path.abspath(p)
         except Exception:
             pass
+
+    # 安全回退：检查 scripts 的父目录是否是合法的小说项目目录
+    parent_dir = os.path.dirname(root_dir)
+    if is_valid_novel_project_dir(parent_dir):
+        return os.path.abspath(parent_dir)
     return ""
 
 
 def set_active_project_dir(novel_dir: str, script_dir: str = None) -> bool:
-    """设置当前活动小说项目指针 (.active_project)"""
+    """设置当前活动小说项目指针 (.active_project)，具备严格路径校验"""
+    if not novel_dir or not is_valid_novel_project_dir(novel_dir):
+        return False
     root_dir = _resolve_scripts_root(script_dir)
     ptr_file = os.path.join(root_dir, ".active_project")
     try:

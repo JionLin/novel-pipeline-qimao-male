@@ -1,3 +1,13 @@
+<!-- WORKSPACE_META_CARD_START -->
+> 📌 **项目速览卡片**  
+> - **业务领域**：AI 创作与内容流水线  
+> - **核心定位**：七猫/番茄商业网文多智能体工业化批量写作与质量质检流水线。  
+> - **核心特性**：多 Agent 协作写书、大纲细化、批量正文生成、合规审核与去 AI 味。  
+> - **核心技术栈**：`Python / Multi-Agent / 大模型生成`  
+> 
+> ---
+<!-- WORKSPACE_META_CARD_END -->
+
 # 📖 Novel Pipeline Multi-Agent (七猫/番茄/起点 商业网文多Agent工业化流水线)
 
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)

@@ -50,20 +50,57 @@ from outline.kg_weaver import (
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 from pipeline.utils import load_active_config, get_active_project_dir, LogMemoryBuffer
-CFG = load_active_config(script_dir=SCRIPT_DIR)
 
+class _LazyOpenAIProxy:
+    """OpenAI 客户端惰性代理，避免在模块 import 时即刻创建底层网络客户端连接"""
+    def __init__(self, script_dir: str):
+        self._script_dir = script_dir
+        self._client = None
 
-NOVEL_DIR = os.path.abspath(CFG.get("project", {}).get("novel_dir", ""))
-OUTLINE_DIR = os.path.abspath(CFG.get("project", {}).get("outline_dir", NOVEL_DIR))
-MASTER_OUTLINE = os.path.abspath(CFG.get("project", {}).get("master_outline", os.path.join(OUTLINE_DIR, "大纲.md")))
+    def _get_client(self) -> OpenAI:
+        if self._client is None:
+            c = load_active_config(script_dir=self._script_dir)
+            api_base = os.getenv("OPENAI_BASE_URL") or c.get("api", {}).get("base_url", "http://127.0.0.1:19528/v1")
+            api_key = os.getenv("OPENAI_API_KEY") or c.get("api", {}).get("api_key", "dfdf")
+            api_timeout = int(c.get("api", {}).get("timeout", 300))
+            self._client = OpenAI(base_url=api_base, api_key=api_key, timeout=api_timeout)
+        return self._client
 
-API_BASE = os.getenv("OPENAI_BASE_URL") or CFG.get("api", {}).get("base_url", "http://127.0.0.1:19528/v1")
-API_KEY = os.getenv("OPENAI_API_KEY") or CFG.get("api", {}).get("api_key", "dfdf")
+    def reset(self):
+        self._client = None
 
-API_TIMEOUT = int(CFG.get("api", {}).get("timeout", 300))
-PLANNER_MODEL = CFG.get("models", {}).get("planner", {}).get("name", "gemini-3.7-flash-tiered")
+    def __getattr__(self, name: str):
+        return getattr(self._get_client(), name)
 
-CLIENT = OpenAI(base_url=API_BASE, api_key=API_KEY, timeout=API_TIMEOUT)
+CLIENT = _LazyOpenAIProxy(SCRIPT_DIR)
+
+def get_client(cfg=None) -> OpenAI:
+    """获取或按需创建活动 OpenAI 客户端"""
+    if cfg is not None:
+        api_base = os.getenv("OPENAI_BASE_URL") or cfg.get("api", {}).get("base_url", "http://127.0.0.1:19528/v1")
+        api_key = os.getenv("OPENAI_API_KEY") or cfg.get("api", {}).get("api_key", "dfdf")
+        api_timeout = int(cfg.get("api", {}).get("timeout", 300))
+        return OpenAI(base_url=api_base, api_key=api_key, timeout=api_timeout)
+    return CLIENT._get_client()
+
+def get_cfg(reload: bool = False):
+    global CFG
+    if reload or not CFG:
+        refresh_runtime_config()
+    return CFG
+
+def refresh_runtime_config():
+    """按需重新对齐当前活动项目的配置与全局参数"""
+    global CFG, NOVEL_DIR, OUTLINE_DIR, MASTER_OUTLINE, API_TIMEOUT, PLANNER_MODEL
+    CFG = load_active_config(script_dir=SCRIPT_DIR)
+    NOVEL_DIR = os.path.abspath(CFG.get("project", {}).get("novel_dir", ""))
+    OUTLINE_DIR = os.path.abspath(CFG.get("project", {}).get("outline_dir", NOVEL_DIR))
+    MASTER_OUTLINE = os.path.abspath(CFG.get("project", {}).get("master_outline", os.path.join(OUTLINE_DIR, "大纲.md")))
+    API_TIMEOUT = int(CFG.get("api", {}).get("timeout", 300))
+    PLANNER_MODEL = CFG.get("models", {}).get("planner", {}).get("name", "gemini-3.7-flash-tiered")
+
+CFG = {}
+refresh_runtime_config()
 
 def get_current_log_path() -> str:
     """动态定位当前有效的小说日志路径"""

@@ -81,11 +81,12 @@ def load_genre_prose_card(
         return "（采用通用文学力学文风，无特定题材禁令）"
 
     mapping = [
+        (["种田", "甜宠", "边关种田", "农女", "荒原"], "female_frontier_farming"),
+        (["古言", "古代言情", "言情", "宅斗", "宫斗", "真假千金", "重生", "王妃", "主母"], "ancient_romance_palace"),
         (["历史", "藩王", "就藩", "军工", "古代", "大明", "大秦", "大唐", "朝堂", "三国"], "history_military"),
         (["仙侠", "修仙", "修真", "玄幻", "宗门", "飞升", "洪荒", "道尊"], "xianxia_cultivation"),
         (["都市", "神豪", "战神", "赘婿", "脑洞", "逆袭", "职场", "商战"], "urban_face_slap"),
         (["末世", "避难所", "求生", "丧尸", "废土", "科幻", "机甲"], "apocalypse_shelter"),
-        (["古言", "宅斗", "宫斗", "真假千金", "重生", "王妃", "主母"], "ancient_romance_palace"),
     ]
 
     card_key = None

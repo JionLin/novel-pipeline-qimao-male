@@ -1473,6 +1473,65 @@ def test_23_character_lifecycle_dossiers_and_refiner_suite():
             shutil.rmtree(temp_novel_dir)
 
 
+def test_24_female_channel_adaptation_and_workspace_override_suite():
+    """测试用例 24: 女频频道自适应文风卡路由与工作区提示词两级覆盖测试"""
+    print("[Test 24] 运行: 女频频道自适应文风卡路由与工作区提示词两级覆盖测试...")
+    from pipeline.prompt_loader import load_prompt, load_genre_prose_card
+    import tempfile, shutil
+
+    # 1. 验证文风卡智能路由优先级：古代言情·边关种田 不被 history_military 截胡
+    card_female_farm = load_genre_prose_card("古代言情·边关种田", reload=True)
+    assert "边关种田烟火五感" in card_female_farm, "古代言情·边关种田 未能命中 female_frontier_farming 文风卡"
+    assert "度量衡与物理尺度完整规范表" not in card_female_farm, "古代言情·边关种田 错误命中了男频军事文风卡"
+    assert "糙汉甜宠" in card_female_farm, "女频甜宠互动规范缺失"
+    print("  -> 🌾 [文风卡 1 成功] '古代言情·边关种田' 成功精准路由至女频种田专属文风卡！")
+
+    # 2. 验证原有男频军事文风卡不受任何影响
+    card_male_hist = load_genre_prose_card("历史架空 / 藩王就藩", reload=True)
+    assert "度量衡与物理尺度完整规范表" in card_male_hist, "历史架空 题材未命中 history_military 文风卡"
+    print("  -> 🛡️ [文风卡 2 成功] 男频历史题材保持原行为，0 负面副作用！")
+
+    # 3. 验证古言宅斗路由
+    card_romance = load_genre_prose_card("古代言情 / 宅斗权谋 / 重生逆袭", reload=True)
+    assert "古言宅斗" in card_romance, "古代言情宅斗 未能命中 ancient_romance_palace 文风卡"
+    print("  -> 👑 [文风卡 3 成功] 古言宅斗题材成功命中 ancient_romance_palace 文风卡！")
+
+    # 4. 验证项目级提示词两级覆盖机制 (Workspace Two-Tier Prompt Override)
+    temp_dir = tempfile.mkdtemp(prefix="test_prompt_override_")
+    try:
+        p_dir = os.path.join(temp_dir, "prompts")
+        os.makedirs(p_dir, exist_ok=True)
+
+        # 写入定制化的 04_writer.md 和 05_reviewer.md
+        custom_writer_content = """# CUSTOM FEMALE WRITER TEST
+核心任务：营造烟火治愈感"""
+        custom_reviewer_content = """# CUSTOM FEMALE REVIEWER TEST
+核心任务：女频品控审核"""
+        with open(os.path.join(p_dir, "04_writer.md"), "w", encoding="utf-8") as f:
+            f.write(custom_writer_content)
+        with open(os.path.join(p_dir, "05_reviewer.md"), "w", encoding="utf-8") as f:
+            f.write(custom_reviewer_content)
+
+        # 4.1 传 custom_dir 时必须优先加载定制版本
+        loaded_w = load_prompt("04_writer", custom_dir=temp_dir, reload=True)
+        assert "CUSTOM FEMALE WRITER TEST" in loaded_w, "未优先加载工作区定制 04_writer 提示词"
+        loaded_r = load_prompt("05_reviewer", custom_dir=temp_dir, reload=True)
+        assert "CUSTOM FEMALE REVIEWER TEST" in loaded_r, "未优先加载工作区定制 05_reviewer 提示词"
+        print("  -> 🎯 [两级覆盖 4 成功] 工作区提示词成功实现 100% 优先级覆盖！")
+
+        # 4.2 不传 custom_dir 时必须平滑回退至系统全局母版
+        global_w = load_prompt("04_writer", custom_dir=None, reload=True)
+        assert "Universal Abstract" in global_w, "全局 04_writer 母版回退加载异常"
+        global_r = load_prompt("05_reviewer", custom_dir=None, reload=True)
+        assert "七猫男频通用版" in global_r, "全局 05_reviewer 母版回退加载异常"
+        print("  -> 🔄 [两级覆盖 5 成功] 无工作区配置时自动平滑回退至全局标准母版！")
+
+        print("  -> ✅ [Test 24 Passed] 女频频道自适应路由与两级覆盖机制 100% 验证通过！\n")
+    finally:
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+
 def main():
     print("=" * 65)
     print("       🧪 小说流水线底层机制单元与回归测试套件 (test.py)")
@@ -1505,9 +1564,10 @@ def main():
         test_21_auto_extraction_and_config_driven_suite()
         test_22_safety_block_interceptor_and_sanitizer()
         test_23_character_lifecycle_dossiers_and_refiner_suite()
+        test_24_female_channel_adaptation_and_workspace_override_suite()
 
         print("=" * 65)
-        print("🎉 ALL 23 TEST SUITES PASSED! 所有底层改动与阻断门禁均已通过测试！")
+        print("🎉 ALL 24 TEST SUITES PASSED! 所有底层改动与阻断门禁均已通过测试！")
         print("=" * 65)
     finally:
         if saved_active:

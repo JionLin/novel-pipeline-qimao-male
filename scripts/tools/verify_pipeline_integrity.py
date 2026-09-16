@@ -1,7 +1,3 @@
-import os, sys
-SCRIPTS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if SCRIPTS_ROOT not in sys.path:
-    sys.path.insert(0, SCRIPTS_ROOT)
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -19,8 +15,11 @@ import sys
 import yaml
 import re
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, SCRIPT_DIR)
+SCRIPTS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if SCRIPTS_ROOT not in sys.path:
+    sys.path.insert(0, SCRIPTS_ROOT)
+
+SCRIPT_DIR = SCRIPTS_ROOT
 
 from auto_outline import safe_patch_config_from_outline, load_genre_matrix
 from run_pipeline import run_planner, build_novel_settings, count_chinese_chars

@@ -60,38 +60,85 @@ from agents.agent_4_publisher import run_publisher as _run_publisher, merge_all_
 from agents.agent_5_state_tracker import run_state_tracker as _run_state_tracker
 
 # ============================================================
-# 配置与环境初始化
+# 配置与环境初始化 (Lazy Accessors & Safe Runtime Initialization)
 # ============================================================
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-from pipeline.utils import load_active_config
-CFG = load_active_config(script_dir=SCRIPT_DIR)
+from pipeline.utils import load_active_config, get_active_project_dir
 
-NOVEL_DIR     = CFG.get("project", {}).get("novel_dir", "")
-OUTLINE_DIR   = CFG.get("project", {}).get("outline_dir", NOVEL_DIR)
-MASTER_OUTLINE = CFG.get("project", {}).get("master_outline", "")
-MASTER_FILE   = CFG.get("project", {}).get("master_file", "合集.md")
-CH_PREFIX     = CFG.get("project", {}).get("chapter_prefix", "C_正文_第")
-CH_SUFFIX     = CFG.get("project", {}).get("chapter_suffix", "章.md")
+class _LazyOpenAIProxy:
+    """OpenAI 客户端惰性代理，避免在模块 import 时即刻创建底层网络客户端连接"""
+    def __init__(self, script_dir: str):
+        self._script_dir = script_dir
+        self._client = None
 
-BATCH_SIZE    = CFG.get("batch", {}).get("size", 5)
-MAX_RETRY     = CFG.get("batch", {}).get("max_retry", 3)
-TAIL_CHARS    = CFG.get("memory_bridge", {}).get("prev_chapter_tail_chars", 500)
+    def _get_client(self) -> OpenAI:
+        if self._client is None:
+            c = load_active_config(script_dir=self._script_dir)
+            api_base = os.getenv("OPENAI_BASE_URL") or c.get("api", {}).get("base_url", "http://127.0.0.1:19528/v1")
+            api_key = os.getenv("OPENAI_API_KEY") or c.get("api", {}).get("api_key", "dfdf")
+            api_timeout = c.get("api", {}).get("timeout", 300)
+            self._client = OpenAI(base_url=api_base, api_key=api_key, timeout=api_timeout)
+        return self._client
 
-MIN_CHARS     = CFG.get("quality", {}).get("min_chinese_chars", 2000)
-TARGET_CHARS  = CFG.get("quality", {}).get("target_chinese_chars", 2400)
-MAX_CHARS     = CFG.get("quality", {}).get("max_chinese_chars", 2800)
+    def reset(self):
+        self._client = None
 
-STATE_TRACKING_ENABLED = CFG.get("state_tracking", {}).get("enabled", False)
-STATE_FILE_NAME       = CFG.get("state_tracking", {}).get("file", "状态文件.json")
-STATE_FILE_PATH       = os.path.join(NOVEL_DIR, STATE_FILE_NAME)
+    def __getattr__(self, name: str):
+        return getattr(self._get_client(), name)
 
-API_BASE = os.getenv("OPENAI_BASE_URL") or CFG.get("api", {}).get("base_url", "http://127.0.0.1:19528/v1")
-API_KEY  = os.getenv("OPENAI_API_KEY") or CFG.get("api", {}).get("api_key", "dfdf")
+CLIENT = _LazyOpenAIProxy(SCRIPT_DIR)
 
-API_TIMEOUT = CFG.get("api", {}).get("timeout", 300)
-CLIENT = OpenAI(base_url=API_BASE, api_key=API_KEY, timeout=API_TIMEOUT)
+def get_client(cfg: Optional[Dict[str, Any]] = None) -> OpenAI:
+    """获取或按需创建活动 OpenAI 客户端"""
+    if cfg is not None:
+        api_base = os.getenv("OPENAI_BASE_URL") or cfg.get("api", {}).get("base_url", "http://127.0.0.1:19528/v1")
+        api_key = os.getenv("OPENAI_API_KEY") or cfg.get("api", {}).get("api_key", "dfdf")
+        api_timeout = cfg.get("api", {}).get("timeout", 300)
+        return OpenAI(base_url=api_base, api_key=api_key, timeout=api_timeout)
+    return CLIENT._get_client()
 
-LOG_FILE_PATH = os.path.join(NOVEL_DIR, "日志.log") if NOVEL_DIR else ""
+def get_cfg(reload: bool = False) -> Dict[str, Any]:
+    global CFG
+    if reload or CFG is None:
+        refresh_runtime_config()
+    return CFG
+
+def get_current_log_path() -> str:
+    n_dir = get_active_project_dir(script_dir=SCRIPT_DIR)
+    if n_dir and os.path.exists(n_dir):
+        return os.path.join(n_dir, "日志.log")
+    return ""
+
+def refresh_runtime_config():
+    """按需重新对齐当前活动项目的配置与全局参数"""
+    global CFG, NOVEL_DIR, OUTLINE_DIR, MASTER_OUTLINE, MASTER_FILE, CH_PREFIX, CH_SUFFIX
+    global BATCH_SIZE, MAX_RETRY, TAIL_CHARS, MIN_CHARS, TARGET_CHARS, MAX_CHARS
+    global STATE_TRACKING_ENABLED, STATE_FILE_NAME, STATE_FILE_PATH, LOG_FILE_PATH
+    
+    CFG = load_active_config(script_dir=SCRIPT_DIR)
+    NOVEL_DIR     = CFG.get("project", {}).get("novel_dir", "")
+    OUTLINE_DIR   = CFG.get("project", {}).get("outline_dir", NOVEL_DIR)
+    MASTER_OUTLINE = CFG.get("project", {}).get("master_outline", "")
+    MASTER_FILE   = CFG.get("project", {}).get("master_file", "合集.md")
+    CH_PREFIX     = CFG.get("project", {}).get("chapter_prefix", "C_正文_第")
+    CH_SUFFIX     = CFG.get("project", {}).get("chapter_suffix", "章.md")
+
+    BATCH_SIZE    = CFG.get("batch", {}).get("size", 5)
+    MAX_RETRY     = CFG.get("batch", {}).get("max_retry", 3)
+    TAIL_CHARS    = CFG.get("memory_bridge", {}).get("prev_chapter_tail_chars", 500)
+
+    MIN_CHARS     = CFG.get("quality", {}).get("min_chinese_chars", 2000)
+    TARGET_CHARS  = CFG.get("quality", {}).get("target_chinese_chars", 2400)
+    MAX_CHARS     = CFG.get("quality", {}).get("max_chinese_chars", 2800)
+
+    STATE_TRACKING_ENABLED = CFG.get("state_tracking", {}).get("enabled", False)
+    STATE_FILE_NAME       = CFG.get("state_tracking", {}).get("file", "状态文件.json")
+    STATE_FILE_PATH       = os.path.join(NOVEL_DIR, STATE_FILE_NAME)
+    LOG_FILE_PATH         = get_current_log_path()
+
+# 初始化全局变量
+CFG = {}
+refresh_runtime_config()
 
 def log(msg: str, level: str = "INFO"):
     """小说项目工作区唯一日志落盘 (带结构化 INFO / WARN / ERROR 级别)"""
@@ -106,10 +153,11 @@ def log(msg: str, level: str = "INFO"):
 
     print(f"[{ts}] [{level}] {clean_msg}", flush=True)
     full_entry = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] [{level}] {clean_msg}\n"
-    if LOG_FILE_PATH:
+    log_path = get_current_log_path()
+    if log_path:
         try:
-            os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
-            with open(LOG_FILE_PATH, "a", encoding="utf-8") as lf:
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+            with open(log_path, "a", encoding="utf-8") as lf:
                 lf.write(full_entry)
         except Exception:
             pass
