@@ -1,0 +1,170 @@
+project:
+  title: 未命名小说
+  target_words: 2000000
+  total_chapters: 833
+  genre: 通用题材
+  sub_genre: 商业长篇流
+  platform: qimao
+  master_file: 合集.md
+  chapter_prefix: C_正文_第
+  chapter_suffix: 章.md
+  characters: []
+  novel_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male
+  workspace_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male
+  output_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male/正文
+  outline_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male/大纲
+  master_outline: /Users/johnny/Desktop/github/novel-pipeline-qimao-male/大纲.md
+api:
+  base_url: http://127.0.0.1:19528/v1
+  api_key: dfdf
+  timeout: 300
+character_locks: []
+batch:
+  size: 5
+  max_retry: 3
+volume_routing:
+- volume: 1
+  range:
+  - 1
+  - 100
+  file: 大纲/第1卷_章节细纲.md
+- volume: 2
+  range:
+  - 101
+  - 200
+  file: 大纲/第2卷_章节细纲.md
+- volume: 3
+  range:
+  - 201
+  - 300
+  file: 大纲/第3卷_章节细纲.md
+- volume: 4
+  range:
+  - 301
+  - 400
+  file: 大纲/第4卷_章节细纲.md
+- volume: 5
+  range:
+  - 401
+  - 500
+  file: 大纲/第5卷_章节细纲.md
+- volume: 6
+  range:
+  - 501
+  - 600
+  file: 大纲/第6卷_章节细纲.md
+- volume: 7
+  range:
+  - 601
+  - 700
+  file: 大纲/第7卷_章节细纲.md
+- volume: 8
+  range:
+  - 701
+  - 800
+  file: 大纲/第8卷_章节细纲.md
+- volume: 9
+  range:
+  - 801
+  - 833
+  file: 大纲/第9卷_章节细纲.md
+models:
+  planner:
+    name: gemini-3.7-flash-tiered
+    temperature: 0.1
+    max_tokens: 8192
+  writer:
+    name: gemini-3.7-flash-tiered
+    temperature: 0.55
+    max_tokens: 8192
+  reviewer:
+    name: gemini-3.7-flash-tiered
+    temperature: 0.1
+    max_tokens: 4096
+  state_tracker:
+    name: gemini-3.7-flash-tiered
+    temperature: 0.1
+    max_tokens: 4096
+quality:
+  min_chinese_chars: 2000
+  target_chinese_chars: 2400
+  max_chinese_chars: 2800
+  opening_max_chars: 3000
+  climax_max_chars: 3000
+  min_dialogue_ratio_normal: 0.12
+  min_dialogue_ratio_combat_or_stealth: 0.05
+structure:
+  macro_three_act_ratio:
+    act1: 0.15
+    act2: 0.65
+    act3: 0.2
+state_tracking:
+  enabled: true
+  file: 状态文件.json
+tech_tree_progression:
+  vol_1_ch1_100:
+    allowed_propellants:
+    - 颗粒化提纯黑火药
+    - 硫磺重结晶配比
+    allowed_primers:
+    - 拉火铜管
+    - 明火燧发
+    - 硫化锑引信
+    allowed_metallurgy:
+    - 土法焦炭高炉
+    - 水力镗床切削熟铁
+    - 陶土坩埚
+    forbidden_terms:
+    - 黑索金
+    - 雷酸汞
+    - TNT
+    - 无烟火药
+    - 硝化甘油
+    - 双基火药
+  vol_2_ch101_200:
+    allowed_propellants:
+    - 苦味酸初型
+    - 单基硝化棉粗制品
+    forbidden_terms:
+    - 黑索金
+    - TNT
+    - 双基火药
+action_pool_registry:
+  measurement_tools:
+  - name: 骨质游标卡尺
+    action: 指腹推移游标卡尺测爪，核对公差刻槽
+  - name: 重力铅锤垂线
+    action: 悬起麻绳重力铅锤，微调立柱垂直度
+  - name: 自磨气泡水平管
+    action: 水准管气泡在两条红线间轻微晃动，校准基座沉降
+  - name: 划针与红松炭条
+    action: 执起钢划针在冷铁皮上划出规整的下刀基准线
+  - name: 测风羽毛与测距规
+    action: 手举雀羽感受风向偏角，折扇式测距木规锁定距离
+  life_sensory_details:
+  - name: 炭火烘烤
+    action: 将冻僵发青的指节悬在暗红炭火上缓缓烘烤，感受皮肉发胀的微温
+  - name: 松针开水
+    action: 端起粗瓷碗咽下一口带松脂清苦的热水，撕开胸腔深处的寒意
+  - name: 粗布缠裹
+    action: 取来细麻布死死缠紧开裂渗血的虎口，打下牢固的死结
+  - name: 盐粒化水
+    action: 在冰冷井水中融化少许粗盐，仰头咽下补充体力
+  forbidden_streaks:
+    max_consecutive_prop_usage: 2
+    max_consecutive_taste_usage: 2
+supporting_cast_arc:
+- role: 副手/武力担当
+  stages:
+    vol_1: 【心境一阶·鹰犬怀疑与道统质问】以体制律例与现实残酷质疑主角，对话携带利益与法理机锋
+    vol_2: 【心境二阶·技术折服与主动掩护】由怀疑转为默契同袍，主动承担防线封锁与痕迹清除
+opening_pacing:
+  enabled: true
+  threat_appear_max_chars: 100
+  first_counter:
+    target_chars: 200
+    tolerance_ratio: 0.2
+    min_chars: 160
+    max_chars: 240
+  confrontation_window_chars: 500
+  max_consecutive_non_conflict: 3
