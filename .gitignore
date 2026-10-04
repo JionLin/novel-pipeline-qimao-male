@@ -30,3 +30,8 @@ output/
 # Environment variables
 .env
 .env.local
+
+# Auto-added standard system & cache ignores
+*.pyc
+*.iml
+.cache/
