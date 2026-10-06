@@ -9,11 +9,11 @@ project:
   chapter_prefix: C_正文_第
   chapter_suffix: 章.md
   characters: []
-  novel_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male
-  workspace_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male
-  output_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male/正文
-  outline_dir: /Users/johnny/Desktop/github/novel-pipeline-qimao-male/大纲
-  master_outline: /Users/johnny/Desktop/github/novel-pipeline-qimao-male/大纲.md
+  novel_dir: /Users/johnny/Desktop/github/3-creative-ip/novel-pipeline-qimao-male
+  workspace_dir: /Users/johnny/Desktop/github/3-creative-ip/novel-pipeline-qimao-male
+  output_dir: /Users/johnny/Desktop/github/3-creative-ip/novel-pipeline-qimao-male/正文
+  outline_dir: /Users/johnny/Desktop/github/3-creative-ip/novel-pipeline-qimao-male/大纲
+  master_outline: /Users/johnny/Desktop/github/3-creative-ip/novel-pipeline-qimao-male/大纲.md
 api:
   base_url: http://127.0.0.1:19528/v1
   api_key: dfdf
