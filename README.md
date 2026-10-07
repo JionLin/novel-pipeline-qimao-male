@@ -3,7 +3,9 @@
 > - **业务领域**：AI 创作与内容流水线  
 > - **核心定位**：七猫/番茄商业网文多智能体工业化批量写作与质量质检流水线。  
 > - **核心特性**：多 Agent 协作写书、大纲细化、批量正文生成、合规审核与去 AI 味。  
-> - **核心技术栈**：`Python / Multi-Agent / 大模型生成`  
+> - **核心技术栈**：`Python 3.10+ / Multi-Agent / FTS5+图谱`  
+> - **启动**：`run_pipeline.py` / `auto_outline.py`；门禁 `python scripts/test.py`  
+> - **治理**：题材卡 `scripts/genres/`；OpenSpec `novel-pipeline-governance`  
 > 
 > ---
 <!-- WORKSPACE_META_CARD_END -->
